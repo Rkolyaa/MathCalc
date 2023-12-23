@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Морський бій</title>
+    <style>
+		body {
+			background-image: url('seas2.gif');
+            background-size:cover;
+			color: white;
+        }
+        table {
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid black;
+            display: inline-block;
+			left:50%;
+        }
+
+        th,
+        td {
+            width: 30px;
+            height: 30px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #ccc;
+        }
+
+        td {
+            cursor: pointer;
+        }
+
+        .board-container {
+            display: flex;
+            flex-direction: row;
+        }
+		#computerBoard{
+			left:50%;
+		}
+		.user{
+			position:relative;
+			margin-left:5%;
+			margin-top:5%;
+			background-color:#DCDCDC;
+			visibility:50;
+			color: black;
+			text-align:center;
+		}
+		.bot{
+			position:relative;
+			margin-left:55%;
+			margin-top:5%;
+			background-color:#DCDCDC;
+			visibility:50;
+			color: black;
+			text-align:center;
+		}
+		.score{
+			position:relative;
+			margin-left:40%;
+			margin-top:-15%;
+			background-color:#DCDCDC;
+			visibility:50;
+			color: black;
+			text-align:center;
+			width:20%;
+			padding:5px;
+		}
+		.arsenal{
+			position:relative;
+			margin-left:40%;
+			margin-top:10%;
+			background-color:#DCDCDC;
+			visibility:50;
+			color: black;
+			text-align:center;
+			width:20%;
+			padding:5px;
+		}
+    </style>
+</head>
+
+<body>
+
+    <div class="board-container">
+        <div class="user">
+            <h2>Ваше поле</h2>
+            <table id="userBoard" class="userBoard"></table>
+        </div>
+	
+        <div class="bot">
+            <h2>Поле комп'ютера</h2>
+            <table id="computerBoard" class="computerBoard"></table>
+        </div>
+    </div>
+	
+	<div class="score">
+	<h1>Рахунок:</h1>
+	<h2>Ви <input class="text" id='you' value='0'> 
+		<br>Комп'ютер <input class="text" id='you2' value='0'></h2>
+	</div>
+	
+	<div class="arsenal">
+		<h1>Арсенал:</h1>
+		<label for="bomb"><input type="checkbox" id="bomb" onclick="bomb()">Бомбочка 💣</label><br>
+		<label for="torpedo"><input type="checkbox" id="torpedo">Торпеда ✏</label><br>
+	</div>
+
+    <script>
+        // Розмірність поля
+        const boardSize = 10;
+
+        // Генерація пустого поля
+        function generateEmptyBoard() {
+            const board = [];
+            for (let i = 0; i < boardSize; i++) {
+                board.push(new Array(boardSize).fill(0));
+            }
+            return board;
+        }
+
+        // Вивід поля на екран
+        function renderBoard(board, elementId, clickHandler) {
+            const table = document.getElementById(elementId);
+            table.innerHTML = '';
+
+            for (let i = 0; i < board.length; i++) {
+                const row = table.insertRow(0);
+                for (let j = 0; j < board[i].length; j++) {
+                    const cell = row.insertCell(j);
+                    cell.addEventListener('click', () => clickHandler(i, j));
+                    if (board[i][j] === 1) {
+                        cell.style.backgroundColor = 'blue';} // Зображення кораблів
+					else if (board[i][j] === 2) {
+                        cell.style.backgroundColor = 'black';}
+					else if (board[i][j] === 'hit') {
+                        cell.style.backgroundColor = 'red';
+						} 										// Червоний колір для попадань
+                    else if (board[i][j] === 'miss') {
+                        cell.style.backgroundColor = 'gray';} // Жовтий колір для промахів
+                    else if (board[i][j] === 'playerMove') {
+                        cell.style.backgroundColor = 'gray';} // Червоний колір для відмічення ходу гравця на полі комп'ютера
+                    else if (board[i][j] === 'computerMove') {
+                        cell.style.backgroundColor = 'gray';}
+					else if (board[i][j] === 'paintteritory') {
+                        cell.style.backgroundColor = 'yellow';// Сірий колір для відмічення ходу комп'ютера на полі гравця
+                    }
+                }
+            }
+        }
+
+        // Генерація кораблів на полі
+		function placeShips(board) {
+			for (let i = 0; i < 5; i++) {
+				let shipCol, shipRow;
+
+				do {
+					shipCol = Math.floor(Math.random() * boardSize);
+					shipRow = Math.floor(Math.random() * boardSize);
+				} while (!isShipPlacementValid(board, shipRow, shipCol));
+
+				board[shipRow][shipCol] = 1;
+			}
+		}
+
+		function isShipPlacementValid(board, row, col) {
+			for (let i = row - 1; i <= row + 1; i++) {
+				for (let j = col - 1; j <= col + 1; j++) {
+					if (i >= 0 && i < boardSize && j >= 0 && j < boardSize) {
+						if (board[i][j] === 1) {
+							return false;
+						}
+					}
+				}
+			}
+			return true;
+		}
+
+
+        // Гравець стріляє
+		function userShoot(row, col) {
+			if (computerBoard[row][col] === 1) {
+				alert('Ви попали!');
+				computerBoard[row][col] = 'hit'; // Позначаємо попадання на полі комп'ютера
+			}
+			else if (computerBoard[row][col] === 2) {
+				alert('Ви попали на бомбу!');
+				userBoard[row][col] = 'hit';
+				computerBoard[row][col] = 'hit';
+			}
+			else {
+				alert('Ви промазали!');
+				computerBoard[row][col] = 'miss'; // Позначаємо промах на полі комп'ютера
+			}
+
+    // Remove the following line, as it overrides the hit status with 'miss'
+    // computerBoard[row][col] = 'playerMove';
+
+		renderBoard(computerBoard, 'computerBoard', userShoot); // Оновлюємо поле комп'ютера
+		computerShoot();
+}
+
+	
+
+        // Комп'ютер стріляє
+        function computerShoot() {
+            let row, col;
+            do {
+                row = Math.floor(Math.random() * boardSize);
+                col = Math.floor(Math.random() * boardSize);
+            } while (userBoard[row][col] === 'computerMove' || userBoard[row][col] === 'hit' || userBoard[row][col] === 'miss');
+
+            if (userBoard[row][col] === 1) {
+                alert('Комп\'ютер попав!');
+                userBoard[row][col] = 'hit'; // Позначаємо попадання на полі гравця
+            } else {
+                alert('Комп\'ютер промазав!');
+                userBoard[row][col] = 'miss'; // Позначаємо промах на полі гравця
+            }
+
+            renderBoard(userBoard, 'userBoard', userShoot); // Оновлюємо поле гравця
+        }
+
+        const userBoard = generateEmptyBoard();
+        const computerBoard = generateEmptyBoard();
+
+        placeShips(userBoard);
+        placeShips(computerBoard);
+
+        renderBoard(userBoard, 'userBoard', userShoot);
+        renderBoard(computerBoard, 'computerBoard', userShoot);
+		
+		
+		function placeBombs(board) {
+			for (let i = 0; i < 5; i++) {
+				let bombCol, bombRow;
+
+				do {
+					bombCol = Math.floor(Math.random() * boardSize);
+					bombRow = Math.floor(Math.random() * boardSize);
+				} while (!isBombPlacementValid(board, bombRow, bombCol));
+
+				board[bombRow][bombCol] = 2;
+			}
+		}
+
+		function isBombPlacementValid(board, row, col) {
+			for (let i = row - 1; i <= row + 1; i++) {
+				for (let j = col - 1; j <= col + 1; j++) {
+					if (i >= 0 && i < boardSize && j >= 0 && j < boardSize) {
+						if (board[i][j] === 1) {
+							return false;
+						}
+					}
+				}
+			}
+			return true;
+		}
+
+		function handleBomb(row, col, userBoard, computerBoard) {
+			if (userBoard[row][col] === 2) {
+				alert('Ви попали на бомбу!');
+				userBoard[row][col] = 'hit';
+				computerBoard[row][col] = 'hit';
+			} else {
+				alert('Ви промазали на бомбу!');
+				userBoard[row][col] = 'miss';
+				computerBoard[row][col] = 'miss';
+			}
+
+			renderBoard(userBoard, 'userBoard', userShoot);
+			renderBoard(computerBoard, 'computerBoard', userShoot);
+
+		
+			computerShoot();
+		}
+		
+		function bomb() {
+			const bombCheckbox = document.getElementById('bomb');
+
+			if (bombCheckbox.checked) {
+				placeBombs(userBoard, computerBoard);
+				placeBombs(computerBoard, userBoard);
+				renderBoard(userBoard, 'userBoard', userShoot);
+				renderBoard(computerBoard, 'computerBoard', userShoot);
+
+		
+			}
+		}
+		
+    </script>
+
+</body>
+
+</html>
